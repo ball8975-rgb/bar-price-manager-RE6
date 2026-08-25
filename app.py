@@ -169,7 +169,7 @@ def import_supplier_excels(cur):
         wb.close()
 
 def init_db():
-    UPLOADS.mkdir(exist_ok=True)
+    CARICAMENTI.mkdir(exist_ok=True)
     DATA.mkdir(exist_ok=True)
     db = conn()
     cur = db.cursor()
