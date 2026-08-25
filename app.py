@@ -10,18 +10,42 @@ except ImportError:
     load_workbook = None
 import sqlite3, shutil, csv, re
 
-BASE_DIR = Path(__file__).resolve().parent
-DB = BASE_DIR / "database.sqlite"
-UPLOADS = BASE_DIR / "uploads"
-DATA = BASE_DIR / "data"
-BONACCINI_CSV = DATA / "catalogo_bonaccini_v19.csv"
-ORTO_CSV = DATA / "catalogo_ortofrutticola_categorie_v19.csv"
-CONAD_XLSX = DATA / "PREZZI CONAD.xlsx"
-GS_XLSX = DATA / "PREZZI GS.xlsx"
+from pathlib import Path
+import shutil
 
-app = FastAPI(title="Bar Price Manager")
-app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
-templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+BASE_DIR = Path(__file__).resolve().parent
+
+DB = BASE_DIR / "database.sqlite"
+
+CARICAMENTI = BASE_DIR / "caricamenti"
+CARICAMENTI.mkdir(exist_ok=True)
+
+# I file sono nella cartella principale del repository
+BONACCINI_CSV = BASE_DIR / "catalogo_bonaccini_v19.csv"
+ORTO_CSV = BASE_DIR / "catalogo_ortofrutticola_categorie_v19.csv"
+CONAD_XLSX = BASE_DIR / "PREZZI CONAD.xlsx"
+GS_XLSX = BASE_DIR / "PREZZI GS.xlsx"
+
+# Creiamo automaticamente la cartella static
+STATIC_DIR = BASE_DIR / "static"
+STATIC_DIR.mkdir(exist_ok=True)
+
+# Copiamo CSS e JavaScript dalla cartella principale
+for filename in ["style.css", "app.js"]:
+    source = BASE_DIR / filename
+    destination = STATIC_DIR / filename
+    if source.exists():
+        shutil.copy2(source, destination)
+
+app = FastAPI(title="Gestione prezzi bar")
+
+app.mount(
+    "/static",
+    StaticFiles(directory=str(STATIC_DIR)),
+    name="static"
+)
+
+templates = Jinja2Templates(directory=str(BASE_DIR))
 
 
 def conn():
