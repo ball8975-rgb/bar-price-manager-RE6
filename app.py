@@ -136,38 +136,134 @@ def import_core_supplier_products(cur):
                          "catalogo_ortofrutticola_categorie_v19.csv"))
 
 def import_supplier_excels(cur):
-    if load_workbook is None: return
+    if load_workbook is None:
+        return
+
+    def save_supplier_product(supplier, desc, cat, price, vol, unita, source):
+        if not desc or price is None:
+            return
+
+        existing = cur.execute("""
+            SELECT id
+            FROM supplier_products
+            WHERE supplier = ?
+              AND lower(trim(descrizione)) = lower(trim(?))
+              AND (
+                    (volume_cl IS NULL AND ? IS NULL)
+                    OR volume_cl = ?
+                  )
+            LIMIT 1
+        """, (supplier, desc, vol, vol)).fetchone()
+
+        if existing:
+            cur.execute("""
+                UPDATE supplier_products
+                SET categoria = ?,
+                    prezzo = ?,
+                    unita = ?,
+                    source_file = ?
+                WHERE id = ?
+            """, (cat, price, unita, source, existing["id"]))
+        else:
+            cur.execute("""
+                INSERT INTO supplier_products
+                (supplier, descrizione, categoria, prezzo,
+                 volume_cl, unita, source_file)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (supplier, desc, cat, price, vol, unita, source))
+
+    # =========================
+    # CONAD
+    # SOLO: CONAD VOLUME SEPARATO
+    # =========================
     if CONAD_XLSX.exists():
-        wb=load_workbook(CONAD_XLSX,data_only=True,read_only=True)
+        wb = load_workbook(
+            CONAD_XLSX,
+            data_only=True,
+            read_only=True
+        )
+
         if "CONAD VOLUME SEPARATO" in wb.sheetnames:
-            ws=wb["CONAD VOLUME SEPARATO"]
+            ws = wb["CONAD VOLUME SEPARATO"]
+
             for row in ws.iter_rows(values_only=True):
-                vals=list(row)
-                if len(vals)<4: continue
-                desc=clean_text(vals[1]); vol=volume_to_cl(vals[2],desc); price=to_float(vals[3])
-                if not desc or desc.upper()=="VOCE" or price is None: continue
-                cat=infer_supplier_category(desc)
-                cur.execute("""INSERT OR IGNORE INTO supplier_products
-                (supplier,descrizione,categoria,prezzo,volume_cl,unita,source_file)
-                VALUES (?,?,?,?,?,?,?)""",("Conad",desc,cat,price,vol,
-                f"{int(vol)} cl" if vol and float(vol).is_integer() else (f"{vol} cl" if vol else ""),
-                "PREZZI CONAD.xlsx / CONAD VOLUME SEPARATO"))
-        wb.close()
-    if GS_XLSX.exists():
-        wb=load_workbook(GS_XLSX,data_only=True,read_only=True)
-        ws=wb[wb.sheetnames[0]]
-        for row in ws.iter_rows(values_only=True):
-            vals=list(row)
-            if len(vals)<4: continue
-            desc=clean_text(vals[1]); liters=vals[2]; price=to_float(vals[3])
-            if not desc or "GIUSTO SPIRITO" not in desc.upper() or price is None: continue
-            vol=volume_to_cl(liters,desc)
-            cur.execute("""INSERT OR IGNORE INTO supplier_products
-            (supplier,descrizione,categoria,prezzo,volume_cl,unita,source_file)
-            VALUES (?,?,?,?,?,?,?)""",("Giusto Spirito",desc,"Birre in fusto",price,vol,
-            f"{liters} L" if liters else "","PREZZI GS.xlsx"))
+                vals = list(row)
+
+                if len(vals) < 4:
+                    continue
+
+                desc = clean_text(vals[1])
+                vol = volume_to_cl(vals[2], desc)
+                price = to_float(vals[3])
+
+                if not desc or desc.upper() == "VOCE" or price is None:
+                    continue
+
+                cat = infer_supplier_category(desc)
+
+                unita = ""
+                if vol is not None:
+                    if float(vol).is_integer():
+                        unita = f"{int(vol)} cl"
+                    else:
+                        unita = f"{vol:g} cl"
+
+                save_supplier_product(
+                    "Conad",
+                    desc,
+                    cat,
+                    price,
+                    vol,
+                    unita,
+                    "PREZZI CONAD.xlsx / CONAD VOLUME SEPARATO"
+                )
+
         wb.close()
 
+    # =========================
+    # GIUSTO SPIRITO
+    # =========================
+    if GS_XLSX.exists():
+        wb = load_workbook(
+            GS_XLSX,
+            data_only=True,
+            read_only=True
+        )
+
+        ws = wb[wb.sheetnames[0]]
+
+        for row in ws.iter_rows(values_only=True):
+            vals = list(row)
+
+            if len(vals) < 4:
+                continue
+
+            desc = clean_text(vals[1])
+            liters = vals[2]
+            price = to_float(vals[3])
+
+            if (
+                not desc
+                or "GIUSTO SPIRITO" not in desc.upper()
+                or price is None
+            ):
+                continue
+
+            vol = volume_to_cl(liters, desc)
+
+            unita = f"{liters} L" if liters else ""
+
+            save_supplier_product(
+                "Giusto Spirito",
+                desc,
+                "Birre in fusto",
+                price,
+                vol,
+                unita,
+                "PREZZI GS.xlsx"
+            )
+
+        wb.close()
 def init_db():
     CARICAMENTI.mkdir(exist_ok=True)
     BASE_DIR.mkdir(exist_ok=True)
