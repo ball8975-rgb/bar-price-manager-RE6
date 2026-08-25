@@ -170,7 +170,7 @@ def import_supplier_excels(cur):
 
 def init_db():
     CARICAMENTI.mkdir(exist_ok=True)
-    DATA.mkdir(exist_ok=True)
+    BASE_DIR.mkdir(exist_ok=True)
     db = conn()
     cur = db.cursor()
     cur.execute("""CREATE TABLE IF NOT EXISTS bonaccini_products(
