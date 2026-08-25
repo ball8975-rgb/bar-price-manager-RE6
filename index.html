@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="it">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Bar Price Manager</title><link rel="stylesheet" href="/static/style.css"></head>
+<body>
+<header><h1>Bar Price Manager</h1><p>Bonaccini · Ortofrutticola · Conad · Giusto Spirito · nuovi fornitori</p></header>
+<nav><button onclick="showTab('dashboard')">Dashboard</button><button onclick="showTab('search')">Cerca</button><button onclick="showTab('order')">Ordine</button><button onclick="showTab('upload')">📥 Importa listino</button></nav>
+<main>
+<section id="dashboard" class="tab"><div class="cards"><div class="card"><b id="countProducts">-</b><span>Prodotti Bonaccini</span></div><div class="card"><b id="countCats">-</b><span>Categorie</span></div><div class="card"><b id="countSuppliers">-</b><span>Fornitori</span></div></div></section>
+<section id="search" class="tab hidden"><div class="toolbar"><input id="q" placeholder="Cerca prodotto..." oninput="loadProducts()"><select id="cat" onchange="loadProducts()"><option value="">Tutte le categorie</option></select></div><div id="products"></div><div id="detail"></div></section>
+<section id="order" class="tab hidden"><h2>Crea ordine</h2><p>Formato: <b>ID prodotto;quantità</b>, una riga per prodotto.</p><form method="post" action="/api/orders"><textarea name="lines" rows="8" placeholder="1;6&#10;3;2"></textarea><input name="note" placeholder="Note ordine"><button type="submit">Crea ordine</button></form></section>
+<section id="upload" class="tab hidden">
+  <h2>📥 Importa nuovo listino</h2>
+  <p>Puoi caricare Conad, Giusto Spirito oppure <b>qualsiasi nuovo fornitore</b>. Non devi più modificare GitHub.</p>
+  <form id="supplierForm" enctype="multipart/form-data">
+    <label>Fornitore</label>
+    <input id="supplierName" name="supplier" list="supplierList" placeholder="Es. Conad, Giusto Spirito, Nuovo Fornitore" required>
+    <datalist id="supplierList"><option value="Bonaccini"><option value="Ortofrutticola"><option value="Conad"><option value="Giusto Spirito"></datalist>
+    <label>File Excel</label><input id="supplierFile" type="file" name="file" accept=".xlsx,.xlsm" required>
+    <button type="button" onclick="previewSupplier()">🔎 Leggi Excel</button>
+  </form>
+  <div id="excelOptions" class="hidden">
+    <h3>Impostazioni importazione</h3>
+    <label>Foglio</label><select id="sheetName"></select>
+    <div class="grid">
+      <div><label>Colonna prodotto</label><select id="productCol"></select></div>
+      <div><label>Colonna prezzo</label><select id="priceCol"></select></div>
+      <div><label>Colonna volume/formato (opzionale)</label><select id="volumeCol"><option value="">Nessuna</option></select></div>
+    </div>
+    <pre id="excelPreview"></pre>
+    <button type="button" onclick="importSupplier()">⬆️ Importa listino</button>
+  </div>
+  <pre id="uploadResult"></pre>
+</section>
+</main><script src="/static/app.js"></script></body></html>

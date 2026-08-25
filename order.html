@@ -1,0 +1,4 @@
+<!doctype html>
+<html lang="it">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Ordine</title><link rel="stylesheet" href="/static/style.css"></head>
+<body><header><h1>Ordine #{{ order['id'] if order else '' }}</h1><p>{{ order['created_at'] if order else '' }}</p></header><main><a href="/">← Torna</a><table><thead><tr><th>Prodotto</th><th>Categoria</th><th>Quantità</th><th>Fornitore</th><th>Prezzo</th><th>Totale</th></tr></thead><tbody>{% set ns = namespace(total=0) %}{% for l in lines %}{% set rowtotal = (l['quantita'] or 0) * (l['prezzo'] or 0) %}{% set ns.total = ns.total + rowtotal %}<tr><td>{{l['descrizione']}}</td><td>{{l['categoria']}}</td><td>{{l['quantita']}}</td><td>{{l['fornitore']}}</td><td>€ {{'%.2f'|format(l['prezzo'] or 0)}}</td><td>€ {{'%.2f'|format(rowtotal)}}</td></tr>{% endfor %}</tbody></table><h2>Totale: € {{'%.2f'|format(ns.total)}}</h2></main></body></html>
